@@ -1,0 +1,72 @@
+import tkinter as tk
+import math
+import random
+
+def calculate_pitch_and_roll(gx, gy, gz):
+    pitch = math.atan2(gy, gz) * 180 / math.pi
+    roll = math.atan2(-gx, math.sqrt(gy * gy + gz * gz)) * 180 / math.pi
+    return pitch, roll
+
+def update_values():
+    gx = random.uniform(-1.0, 1.0)
+    gy = random.uniform(-1.0, 1.0)
+    gz = random.uniform(-1.0, 1.0)
+
+    pitch, roll = calculate_pitch_and_roll(gx, gy, gz)
+
+    draw_gauge(pitch, roll)
+    
+    root.after(1000, update_values)
+
+def draw_gauge(pitch, roll):
+    canvas.delete("all")
+
+    # Draw circular gauge
+    cx, cy, r = 200, 200, 150
+    canvas.create_oval(cx - r, cy - r, cx + r, cy + r, outline="white", width=2)
+
+    # Draw sky and ground as half circles
+    canvas.create_arc(cx - r, cy - r, cx + r, cy + r, start=0, extent=180, fill="#4682B4", outline="")  # Darker blue
+    canvas.create_arc(cx - r, cy - r, cx + r, cy + r, start=180, extent=180, fill="green", outline="")
+
+    # Draw pitch line (shorter than the circle diameter)
+    pitch_radians = math.radians(pitch)
+    offset_y = r * math.tan(pitch_radians)
+    pitch_line_length = r * 0.9  # Slightly shorter length
+    canvas.create_line(cx - pitch_line_length, cy - offset_y, cx + pitch_line_length, cy + offset_y, fill="white", width=2)
+
+    # Draw roll indicator
+    roll_radians = math.radians(roll)
+    roll_length = 50
+    roll_x = roll_length * math.sin(roll_radians)
+    roll_y = roll_length * math.cos(roll_radians)
+
+    canvas.create_oval(cx - 25, cy - 25, cx + 25, cy + 25, outline="white", width=2)
+    canvas.create_line(cx, cy, cx + roll_x, cy - roll_y, fill="white", width=2)
+
+    # Draw vertical lines on the left and right sides within the circle
+    vert_line_length = r / 2
+    line_offset = r * 0.2  # Offset from the circle boundary
+    canvas.create_line(cx - r + line_offset, cy - vert_line_length, cx - r + line_offset, cy + vert_line_length, fill="white", width=2)
+    canvas.create_line(cx + r - line_offset, cy - vert_line_length, cx + r - line_offset, cy + vert_line_length, fill="white", width=2)
+
+    # Draw central horizontal line connecting vertical lines
+    canvas.create_line(cx - r + line_offset, cy, cx + r - line_offset, cy, fill="white", width=2)
+
+    # Display pitch and roll values on the blue part with refined font
+    canvas.create_text(cx, cy - r * 0.35, text=f"Pitch: {pitch:.2f}°", font=("Helvetica", 14, "bold"), fill="white")
+    canvas.create_text(cx, cy - r * 0.2, text=f"Roll: {roll:.2f}°", font=("Helvetica", 14, "bold"), fill="white")
+
+# Create the main window
+root = tk.Tk()
+root.title("Pitch and Roll Display")
+
+# Create canvas for drawing the gauge
+canvas = tk.Canvas(root, width=400, height=400, bg="black")
+canvas.pack()
+
+# Start the update loop
+update_values()
+
+# Run the GUI event loop
+root.mainloop()
