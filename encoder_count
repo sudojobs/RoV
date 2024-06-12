@@ -1,0 +1,35 @@
+import gpiod
+import time
+
+# GPIO pin connected to the encoder (BCM numbering)
+ENCODER_PIN = 17
+CHIP = 'gpiochip0'  # The GPIO chip to use
+
+# Initialize variables
+rotation_count = 0
+
+# Define the callback function for the encoder
+def encoder_callback(event):
+    global rotation_count
+    if event.type == gpiod.LineEvent.RISING_EDGE:
+        rotation_count += 1
+        print(f"Rotation count: {rotation_count}")
+
+# Setup gpiod
+chip = gpiod.Chip(CHIP)
+line = chip.get_line(ENCODER_PIN)
+line.request(consumer="encoder", type=gpiod.LINE_REQ_EV_RISING_EDGE)
+
+print("Counting wheel rotations. Press Ctrl+C to stop.")
+
+try:
+    while True:
+        event = line.event_wait(sec=1)
+        if event:
+            event = line.event_read()
+            encoder_callback(event)
+except KeyboardInterrupt:
+    print("Stopping...")
+finally:
+    line.release()
+    chip.close()
