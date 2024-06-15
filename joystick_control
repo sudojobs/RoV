@@ -1,0 +1,71 @@
+import time
+import board
+import busio
+import gpiod
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+from gpiozero import Button
+
+class JoystickController:
+    def __init__(self, button_pin=19):
+        self.i2c = busio.I2C(board.SCL, board.SDA)
+        self.ads = ADS.ADS1115(self.i2c)
+        self.x_axis = AnalogIn(self.ads, ADS.P0)
+        self.y_axis = AnalogIn(self.ads, ADS.P1)
+        self.button = Button(button_pin)
+        self.button.when_pressed = self.on_button_press
+
+        # Thresholds for determining direction
+        self.CENTER_THRESHOLD = 20000
+        self.LEFT_THRESHOLD = 10000
+        self.RIGHT_THRESHOLD = 25000
+        self.UP_THRESHOLD = 10000
+        self.DOWN_THRESHOLD = 25000
+
+    def on_button_press(self):
+        print("Button pressed!")
+        # Add additional actions or callbacks as needed
+
+    def read_joystick(self):
+        x_value = self.x_axis.value
+        y_value = self.y_axis.value
+        # Determine X-axis direction
+        if x_value < self.LEFT_THRESHOLD:
+            x_status = 'LEFT'
+        elif x_value > self.RIGHT_THRESHOLD:
+            x_status = 'RIGHT'
+        else:
+            x_status = 'CENTER'
+        
+        # Determine Y-axis direction
+        if y_value < self.UP_THRESHOLD:
+            y_status = 'UP'
+        elif y_value > self.DOWN_THRESHOLD:
+            y_status = 'DOWN'
+        else:
+            y_status = 'CENTER'
+        
+        return x_status, y_status
+
+    def run(self):
+        try:
+            print("Joystick Controller running. Press Ctrl+C to exit...")
+            while True:
+                x_status, y_status = self.read_joystick()
+                
+                if x_status != 'CENTER':
+                    print(f"X: {x_status}")
+                if y_status != 'CENTER':
+                    print(f"Y: {y_status}")
+                
+                time.sleep(0.1)
+        
+        except KeyboardInterrupt:
+            print("\nExiting...")
+            self.button.close()
+
+if __name__ == "__main__":
+    # Example usage:
+    joystick = JoystickController(button_pin=19)
+    joystick.run()
+
